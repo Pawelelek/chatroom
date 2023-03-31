@@ -3,6 +3,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -26,13 +27,16 @@ namespace chatroom
     public partial class MainWindow : Window
     {
         IPEndPoint serverEndPoint;
-        UdpClient client = new UdpClient();
+        NetworkStream ns = null;
+        StreamReader sr = null;
+        TcpClient tcpClient;
+        StreamWriter sw = null;
         ObservableCollection<MessageInfo> messages = new ObservableCollection<MessageInfo>();
-        //const string serverAddress = "127.0.0.1";
-        //const short serverPort = 4040;
+
         public MainWindow()
         {
             InitializeComponent();
+            tcpClient = new TcpClient();
             this.DataContext = messages;
             string serverAddress = ConfigurationManager.AppSettings["ServerAddress"]!; 
             short serverPort = short.Parse(ConfigurationManager.AppSettings["ServerPort"]!); 
@@ -45,11 +49,15 @@ namespace chatroom
         {
             if (!String.IsNullOrWhiteSpace(msgTextBox.Text))
             {
-                SendMessage(msgTextBox.Text);
+                string message = msgTextBox.Text;
+                //byte[] data = Encoding.Unicode.GetBytes(message);
+                sw.WriteLine(message);
+                //ns.Write(data);
+                sw.Flush();
             }
         }
 
-        private void JoinBtnClick(object sender, RoutedEventArgs e)
+        private void ConnectBtnClick(object sender, RoutedEventArgs e)
         {
             if (!sendbtn.IsEnabled)
             {
@@ -59,25 +67,39 @@ namespace chatroom
             {
                 leavebtn.IsEnabled = true;
             }
-            SendMessage("$<join>");
-            Listen();
+            try
+            {
+                tcpClient.Connect(serverEndPoint);
+                ns = tcpClient.GetStream();
+                sr = new StreamReader(ns);
+                sw = new StreamWriter(ns);
+                Listen();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            
         }
-        private async void SendMessage(string message)
-        {
-            byte[] data = Encoding.Unicode.GetBytes(message);
-            await client.SendAsync(data, data.Length, serverEndPoint);
-        }
+        //private void SendMessage(string message)
+        //{
+            
+
+        //    //await client.SendAsync(data, data.Length, serverEndPoint);
+        //}
         private async void Listen()
         {
+            //StreamReader sr = new StreamReader(ns);
           while (true)
           {
-              var res = await client.ReceiveAsync();
-              string message = Encoding.Unicode.GetString(res.Buffer);
+              string? message = await sr.ReadLineAsync();
+              //var res = await client.ReceiveAsync();
+              //string message = Encoding.Unicode.GetString(res.Buffer);
               messages.Add(new MessageInfo(message));
           }
            
         }
-        private void LeaveBtnClick(object sender, RoutedEventArgs e)
+        private void DisconnectBtnClick(object sender, RoutedEventArgs e)
         {
             if (sendbtn.IsEnabled)
             {
@@ -87,7 +109,8 @@ namespace chatroom
             {
                 leavebtn.IsEnabled = false;
             }
-            SendMessage("$<leave>");
+            ns.Close();
+            tcpClient.Close();
             messages.Clear();
             //this.UpdateLayout();
         }
@@ -96,9 +119,9 @@ namespace chatroom
     {
         public string Message { get; set; }
         public DateTime Time { get; set; }
-        public MessageInfo(string msg)
+        public MessageInfo(string? msg)
         {
-            Message = msg;
+            Message = msg ?? "";
             Time = DateTime.Now;
         }
         public override string ToString()
