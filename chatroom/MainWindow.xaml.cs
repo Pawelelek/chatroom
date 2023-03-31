@@ -37,21 +37,28 @@ namespace chatroom
             string serverAddress = ConfigurationManager.AppSettings["ServerAddress"]!; 
             short serverPort = short.Parse(ConfigurationManager.AppSettings["ServerPort"]!); 
             serverEndPoint = new IPEndPoint(IPAddress.Parse(serverAddress), serverPort);
-            //sendbtn.IsEnabled = false;
-            
+            sendbtn.IsEnabled = false;
+            leavebtn.IsEnabled = false;
         }
 
         private void SendBtnClick(object sender, RoutedEventArgs e)
         {
-            SendMessage(msgTextBox.Text);
+            if (!String.IsNullOrWhiteSpace(msgTextBox.Text))
+            {
+                SendMessage(msgTextBox.Text);
+            }
         }
 
         private void JoinBtnClick(object sender, RoutedEventArgs e)
         {
-            //if (!sendbtn.IsEnabled)
-            //{
-            //    sendbtn.IsEnabled = true;
-            //}
+            if (!sendbtn.IsEnabled)
+            {
+                sendbtn.IsEnabled = true;
+            }
+            if (!leavebtn.IsEnabled)
+            {
+                leavebtn.IsEnabled = true;
+            }
             SendMessage("$<join>");
             Listen();
         }
@@ -72,15 +79,17 @@ namespace chatroom
         }
         private void LeaveBtnClick(object sender, RoutedEventArgs e)
         {
-            //if (sendbtn.IsEnabled)
-            //{
-            //    sendbtn.IsEnabled = false;
-            //}
-            //if (leavebtn.IsEnabled)
-            //{
-            //    leavebtn.IsEnabled = false;
-            //}
-            //SendMessage("$<leave>");
+            if (sendbtn.IsEnabled)
+            {
+                sendbtn.IsEnabled = false;
+            }
+            if (leavebtn.IsEnabled)
+            {
+                leavebtn.IsEnabled = false;
+            }
+            SendMessage("$<leave>");
+            messages.Clear();
+            //this.UpdateLayout();
         }
     }
     class MessageInfo

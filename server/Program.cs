@@ -10,6 +10,7 @@ namespace server
     {
         const short port = 4040;
         const string JOIN_CMD = "$<join>";
+        const string LEAVE_CMD = "$<leave>";
         UdpClient server = new UdpClient(port);
         HashSet<IPEndPoint> members = new HashSet<IPEndPoint>();
         IPEndPoint clientEndPoint = null;
@@ -18,15 +19,18 @@ namespace server
             members.Add(member);
             Console.WriteLine("Member was added!!!");
         }
+        private void RemoveMember(IPEndPoint member)
+        {
+            members.Remove(member);
+            //members.Clear();
+            Console.WriteLine("Member was deleted!!!");
+        }
         private void SendToAll(byte[] data)
         {
             foreach (IPEndPoint member in members)
             {
                 server.SendAsync(data, data.Length, member);
             }
-
-
-
         }
         public void Start()
         {
@@ -40,13 +44,14 @@ namespace server
                 {
                     AddMember(clientEndPoint);
                 }
+                else if (LEAVE_CMD == message)
+                {
+                    RemoveMember(clientEndPoint);
+                }
                 else
                 {
                     SendToAll(data);
                 }
-
-
-
             }
         }
 

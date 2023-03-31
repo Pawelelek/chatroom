@@ -15,6 +15,6 @@
             <TextBox Name="msgTextBox" Margin="5" VerticalAlignment="Center"></TextBox>
         </DockPanel>
         <TextBlock DockPanel.Dock="Top" TextAlignment="Center">Chat</TextBlock>
-        <ListBox ItemsSource="{Binding}"></ListBox>
+        <ListBox ItemsSource="{Binding}" Name="listof"></ListBox>
     </DockPanel>
 </Window>
